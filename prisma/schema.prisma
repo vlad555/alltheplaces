@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Video {
+  id               String    @id @default(cuid())
+  channelName      String    @map("channel_name")
+  videoTitle       String    @map("video_title")
+  videoUrl         String    @unique @map("video_url")
+  uploadDate       DateTime  @map("upload_date")
+  publishingDate   DateTime? @map("publishing_date") // Actual video publishing date from YouTube
+  subtitles        String?   @db.Text
+  duration         Int?      // Duration in seconds
+  viewCount        Int?      @map("view_count")
+  thumbnailUrl     String?   @map("thumbnail_url")
+  videoId          String    @unique @map("video_id")
+  channelId        String    @map("channel_id")
+  
+  // Caption-related fields
+  captionFileName  String?   @map("caption_file_name") // Reference to caption file if stored separately
+  hasCaption       Boolean   @default(false) @map("has_caption") // Quick check for caption availability
+  captionLanguage  String?   @map("caption_language") // Language of the captions
+  lastCaptionCheck DateTime? @map("last_caption_check") // When captions were last checked/updated
+  
+  // Processing status
+  processingStatus String    @default("pending") @map("processing_status") // pending, processing, completed, failed
+  
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@map("videos")
+  @@index([channelName])
+  @@index([channelId])
+  @@index([uploadDate])
+  @@index([publishingDate])
+  @@index([hasCaption])
+  @@index([processingStatus])
+  @@index([lastCaptionCheck])
+}
+
+model Channel {
+  id            String   @id @default(cuid())
+  channelId     String   @unique @map("channel_id")
+  channelName   String   @map("channel_name")
+  channelUrl    String   @map("channel_url")
+  description   String?  @db.Text
+  subscriberCount Int?   @map("subscriber_count")
+  videoCount    Int?     @map("video_count")
+  thumbnailUrl  String?  @map("thumbnail_url")
+  
+  lastProcessed DateTime? @map("last_processed")
+  isProcessing  Boolean   @default(false) @map("is_processing")
+  
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("channels")
+}
+
+model Job {
+  id          String   @id @default(cuid())
+  type        String   // 'channel-processing', 'caption-recheck', etc.
+  status      String   @default("queued") // queued, processing, completed, failed
+  priority    Int      @default(0)
+  
+  // Job data and results
+  data        Json?    // Job input data
+  result      Json?    // Job result data
+  error       String?  @db.Text // Error message if failed
+  
+  // Progress tracking
+  progress    Int      @default(0) // Progress percentage (0-100)
+  totalSteps  Int      @default(1) // Total number of steps
+  currentStep Int      @default(0) // Current step number
+  stepName    String?  // Name of current step
+  
+  // Timing
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  // Retry logic
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(3) @map("max_attempts")
+  
+  @@map("jobs")
+  @@index([status])
+  @@index([type])
+  @@index([priority])
+  @@index([createdAt])
+}

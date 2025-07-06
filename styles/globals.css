@@ -1,0 +1,268 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Custom utilities */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* Custom components */
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .input-primary {
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm;
+  }
+  
+  .card {
+    @apply bg-white overflow-hidden shadow rounded-lg;
+  }
+  
+  .card-header {
+    @apply px-4 py-5 sm:px-6;
+  }
+  
+  .card-body {
+    @apply px-4 py-5 sm:p-6;
+  }
+  
+  .card-footer {
+    @apply px-4 py-4 sm:px-6;
+  }
+}
+
+/* Animation classes */
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Loading states */
+.loading-skeleton {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+.loading-text {
+  @apply loading-skeleton h-4 w-3/4 mb-2;
+}
+
+.loading-title {
+  @apply loading-skeleton h-6 w-1/2 mb-4;
+}
+
+/* Focus states for accessibility */
+.focus-visible:focus {
+  @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+}
+
+/* Custom toast styles */
+.toast-success {
+  @apply bg-green-500 text-white;
+}
+
+.toast-error {
+  @apply bg-red-500 text-white;
+}
+
+.toast-warning {
+  @apply bg-yellow-500 text-white;
+}
+
+.toast-info {
+  @apply bg-blue-500 text-white;
+}
+
+/* Responsive video container */
+.video-container {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+}
+
+.video-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Search highlight */
+.search-highlight {
+  @apply bg-yellow-200 px-1 py-0.5 rounded font-medium;
+}
+
+/* Status indicators */
+.status-processing {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800;
+}
+
+.status-completed {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800;
+}
+
+.status-error {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800;
+}
+
+.status-idle {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800;
+}
+
+/* Progress bars */
+.progress-bar {
+  @apply w-full bg-gray-200 rounded-full h-2;
+}
+
+.progress-fill {
+  @apply bg-primary-600 h-2 rounded-full transition-all duration-300 ease-in-out;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  @apply fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity;
+}
+
+.modal-panel {
+  @apply inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full;
+}
+
+/* Dropdown animations */
+.dropdown-enter {
+  @apply opacity-0 scale-95;
+}
+
+.dropdown-enter-active {
+  @apply opacity-100 scale-100 transition duration-100 ease-out;
+}
+
+.dropdown-exit {
+  @apply opacity-100 scale-100;
+}
+
+.dropdown-exit-active {
+  @apply opacity-0 scale-95 transition duration-75 ease-in;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-break-before {
+    page-break-before: always;
+  }
+  
+  .print-break-after {
+    page-break-after: always;
+  }
+}
+
+/* Dark mode support (if needed in future) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .btn-primary {
+    @apply border-2 border-black;
+  }
+  
+  .input-primary {
+    @apply border-2 border-black;
+  }
+}
+

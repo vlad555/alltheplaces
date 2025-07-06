@@ -1,118 +1,392 @@
-# All the Places
+# Video Memory 🎥
 
-A project to extract GeoJSON from the web focusing on websites that have 'store locator' pages like restaurants, gas stations, retailers, etc.
+A full-stack web application that allows users to search through YouTube video subtitles with AI-powered insights. Built with Next.js, PostgreSQL, and OpenAI.
 
-The project is built using [`scrapy`](https://scrapy.org/), a Python-based web scraping framework. Each target website gets its own [spider](https://doc.scrapy.org/en/latest/topics/spiders.html), which does the work of extracting interesting details about locations and outputting results in a useful format.
+## Features ✨
 
-## Adding a spider
+- **YouTube Channel Processing**: Automatically fetch all videos from any YouTube channel
+- **Subtitle Extraction**: Download and store subtitles for searchable content
+- **Powerful Search**: Full-text search through video subtitles with context
+- **AI Integration**: Generate summaries and ask questions about video content
+- **Background Processing**: Robust job queue system with Redis and BullMQ
+- **Real-time Progress**: Live progress tracking with Server-Sent Events
+- **Video Management**: Browse, filter, and manage your video library
+- **Caption Rechecking**: Automatically retry failed caption extractions
+- **Advanced Filtering**: Search by channel, caption availability, date, and more
+- **Responsive Design**: Modern, mobile-friendly interface
 
-To scrape a new website for locations, you'll want to create a new spider. You can copy from existing spiders or start from a blank, but the result is always a Python class that has a `process()` function that `yield`s [`GeojsonPointItem`s](https://github.com/iandees/all-the-places/blob/master/locations/items.py). The Scrapy framework does the work of outputting the GeoJSON based on these objects that the spider generates.
+## Tech Stack 🛠️
 
-## Development setup
+- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes, Node.js
+- **Database**: PostgreSQL with Prisma ORM
+- **Queue System**: Redis + BullMQ for background processing
+- **AI**: OpenAI GPT-4 for summaries and Q&A
+- **APIs**: YouTube Data API v3, YouTube Transcript API
+- **Real-time**: Server-Sent Events for progress tracking
+- **Styling**: Tailwind CSS with Lucide React icons
 
-To get started, you'll want to install the dependencies for this project.
+## Prerequisites 📋
 
-1. This project uses `pipenv` to handle dependencies and virtual environments. To get started, make sure you have [`pipenv` installed](https://github.com/kennethreitz/pipenv#installation).
+Before you begin, ensure you have the following installed:
 
-1. With `pipenv` installed, make sure you have the `all-the-places` repository checked out
+- Node.js 18+ and npm
+- PostgreSQL 12+
+- Redis 6+ (for background processing)
+- Git
 
-   ```
-   git clone git@github.com:alltheplaces/alltheplaces.git
-   ```
+You'll also need API keys for:
+- YouTube Data API v3
+- OpenAI API
 
-1. Then you can install the dependencies for the project
+## Quick Start 🚀
 
-   ```
-   cd alltheplaces
-   pipenv install
-   ```
+### 1. Clone the Repository
 
-1. After dependencies are installed, make sure you can run the `scrapy` command without error
-
-   ```
-   pipenv run scrapy
-   ```
-
-1. If `pipenv run scrapy` ran without complaining, then you have a functional `scrapy` setup and are ready to write a scraper.
-
-## Create a new spider
-
-1. Create a new file in `locations/spiders/` with this content:
-
-    ```python
-    # -*- coding: utf-8 -*-
-    import scrapy
-    from locations.items import GeojsonPointItem
-
-    class TemplateSpider(scrapy.Spider):
-        name = "template"
-        allowed_domains = ["www.sample.com"]
-        start_urls = (
-            'https://www.sample.com/locations/',
-        )
-
-        def parse(self, response):
-            pass
-    ```
-
-    This blank/template spider will start at the given `start_urls`, only touch the domains listed in `allowed_domains`, and all web requests will be returned to the `parse()` function with response content in the `response` argument. Once you have the response content, you can perform various operations on it. For example, the most useful is probably running [XPath](https://developer.mozilla.org/en-US/docs/Web/XPath) selections on the HTML of the page to extract data out of the page. Check out the "Scraper tips" section below for more information about how to use these tools to efficiently get data out of the page.
-
-1. Once you have your spider written, you can give it a test run to make sure it's finding the expected results.
-
-   ```
-   pipenv run scrapy crawl template
-   ```
-
-   The `scrapy crawl template` command runs a spider named `template`. If you changed the name of your spider, you should use the name you chose. By default, `scrapy crawl` does not save the output anywhere, but it does log the results of the spider operation fairly verbosely.
-
-   To generate GeoJSON locally, you can enable a couple options during the crawl process to use the GeoJSON exporter and to specify the file to write it to:
-
-   ```
-   pipenv run scrapy crawl template \
-     --output-format=geojson \
-     --output=output.geojson
-   ```
-
-1. Finally, make sure your `parse()` function is `yield`ing `GeojsonPointItem`s that contain the location and property data that you extract from the page:
-
-   ```python
-   def parse(self, response):
-      yield GeojsonPointItem(
-          lat=latitude,
-          lon=longitude,
-          addr_full="1234 Fifth Street",
-          city="San Francisco",
-          state="CA"
-      )
-   ```
-
-1. Once you have a spider that logs out useful results, you can create a new branch and push it up to your fork to create a pull request. The build system will run your spider and output information about the results as a comment on your pull request.
-
-## Tips for writing a spider
-
-### Prefer a directory of all locations
-
-Most listings of locations come in two flavors: a "store finder" that lets the user search by location and a "store directory" that is a hierarchical listing of all locations. These listings are sometimes hidden in the footer or on the site map page. Keep an eye out for these, because it's a lot easier if they enumerate all the locations for you rather than having to program a spider to do it for you.
-
-If the only option is search by location, there is likely an AJAX query made to search by latitude/longitude. Keep an eye on your browser's developer tools "network" tab to see what the request is so you can replicate it in your spider.
-
-### You can send the spider to other pages
-
-The simplest thing a spider can do is to load the `start_urls`, process the page, and `yield` the data as `GeojsonPointItem` objects from the `parse()` method. Usually that's not enough to get at useful data, though. The `parse()` method can also `yield` a [Request object](https://doc.scrapy.org/en/latest/topics/request-response.html#request-objects), which scrapy will use to add another URL to the request queue.
-
-By default, the `parse()` method on the spider will be called with the response for the new request. In many cases it's easier to create a new function to parse the new page's content and pass that function in via the `Request` object's `callback` parameter like so:
-
-```python
-yield scrapy.Request(
-  response.urljoin(store_url.extract()),
-  callback=self.parse_store
-)
+```bash
+git clone <your-repo-url>
+cd video-memory
 ```
 
-Since the next URL you want to request is usually pulled from an `href` in the page and relative to the page you're on, you can use the [`response.urljoin()`](https://doc.scrapy.org/en/latest/topics/request-response.html#scrapy.http.Response.urljoin) method as a shortcut to build the URL for the next request.
+### 2. Install Dependencies
 
-### Using the scrapy shell
+```bash
+npm install
+```
 
-Instead of running the `scrapy crawl` every time you want to try your spider, you can use the [Scrapy shell](https://doc.scrapy.org/en/latest/topics/shell.html) to load a page and experiment with XPath queries. Once you're happy with the query that extracts interesting data you can use it in your spider. This is a whole lot easier than running the whole crawl command every time you make a change to your spider.
+### 3. Set Up Environment Variables
 
-To enter the shell, use `scrapy shell http://example.com` (where you replace the URL with your own). It will dump you into a Python shell after having requested the page and parsing it. Once in the shell, you can do things with the `response` object as if you were in your spider. The shell also offers a shortcut function called `fetch()` that lets you pull up a different page.
+Copy the example environment file and fill in your values:
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` with your configuration:
+
+```env
+# Database
+DATABASE_URL="postgresql://username:password@localhost:5432/video_memory?schema=public"
+
+# YouTube API
+YOUTUBE_API_KEY="your_youtube_api_key_here"
+
+# OpenAI API
+OPENAI_API_KEY="your_openai_api_key_here"
+
+# Next.js
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your_nextauth_secret_here"
+```
+
+### 4. Set Up the Database
+
+Create a PostgreSQL database and run the setup:
+
+```bash
+# Generate Prisma client
+npm run db:generate
+
+# Push the schema to your database
+npm run db:push
+
+# Or run migrations (alternative to db:push)
+npm run db:migrate
+```
+
+### 5. Start the Development Server
+
+```bash
+npm run dev
+```
+
+Visit [http://localhost:3000](http://localhost:3000) to see the application.
+
+## API Keys Setup 🔑
+
+### YouTube Data API v3
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the YouTube Data API v3
+4. Create credentials (API key)
+5. Restrict the API key to YouTube Data API v3 (recommended)
+
+### OpenAI API
+
+1. Sign up at [OpenAI](https://platform.openai.com/)
+2. Go to API Keys section
+3. Create a new API key
+4. Add billing information (required for API usage)
+
+## Database Setup 💾
+
+### Local PostgreSQL
+
+1. Install PostgreSQL on your system
+2. Create a new database:
+   ```sql
+   CREATE DATABASE video_memory;
+   ```
+3. Update the `DATABASE_URL` in your `.env.local` file
+
+### Cloud Database (Recommended for Production)
+
+Consider using managed PostgreSQL services like:
+- [Supabase](https://supabase.com/) (Free tier available)
+- [PlanetScale](https://planetscale.com/)
+- [Railway](https://railway.app/)
+- [Neon](https://neon.tech/)
+
+## Background Processing Setup 🔄
+
+### Redis Setup
+
+The application uses Redis for background job processing. You need to have Redis running:
+
+#### Local Redis
+```bash
+# Install Redis (macOS)
+brew install redis
+
+# Install Redis (Ubuntu)
+sudo apt-get install redis-server
+
+# Start Redis
+redis-server
+```
+
+#### Cloud Redis (Recommended for Production)
+- [Redis Cloud](https://redis.com/redis-enterprise-cloud/)
+- [Upstash](https://upstash.com/)
+- [Railway Redis](https://railway.app/)
+
+### Starting the Background Worker
+
+The background worker processes jobs for channel processing and caption rechecking:
+
+```bash
+# Development (with auto-restart)
+npm run worker:dev
+
+# Production
+npm run worker
+```
+
+**Important**: The background worker must be running for channel processing to work. Without it, jobs will queue but not execute.
+
+## Usage Guide 📖
+
+### 1. Processing a YouTube Channel
+
+1. Navigate to the home page
+2. Enter a YouTube channel URL (supports various formats):
+   - `https://www.youtube.com/@channelname`
+   - `https://www.youtube.com/channel/UC...`
+   - `https://www.youtube.com/c/channelname`
+   - `https://www.youtube.com/user/username`
+3. Select the maximum number of videos to process
+4. Click "Start Processing Channel"
+5. Monitor the real-time processing status with live progress updates
+6. Processing happens in the background - you can close the browser and it will continue
+
+### 2. Managing Your Video Library
+
+1. Navigate to the "Videos" page
+2. Browse all processed videos with thumbnails and metadata
+3. Filter videos by:
+   - Channel ID
+   - Caption availability
+   - Search terms in title/channel
+4. Sort by publishing date, view count, title, etc.
+5. Recheck captions for videos that failed initial processing
+
+### 3. Searching Video Content
+
+1. Go to the Search page
+2. Enter the channel name (case-insensitive)
+3. Enter your search query
+4. View results with subtitle fragments and context
+5. Use AI features to summarize or ask questions about videos
+
+### 4. AI Features
+
+- **Summarize**: Generate AI-powered summaries of video content
+- **Ask Questions**: Get specific answers based on video subtitles
+- **Search Suggestions**: Receive AI-generated related search terms
+
+## API Endpoints 🔌
+
+### Channel Processing
+- `POST /api/process-channel` - Start processing a YouTube channel (creates background job)
+- `GET /api/progress/[jobId]` - Get real-time job progress (Server-Sent Events)
+
+### Video Management
+- `GET /api/videos` - List videos with filtering and pagination
+- `POST /api/recheck-captions` - Start caption recheck job
+- `GET /api/recheck-captions` - Get caption statistics
+
+### Search
+- `GET /api/search` - Search video subtitles
+
+### AI Features
+- `POST /api/ai/summarize` - Generate video summaries
+- `POST /api/ai/qa` - Ask questions about video content
+
+## Database Schema 📊
+
+### Videos Table
+```sql
+CREATE TABLE videos (
+  id TEXT PRIMARY KEY,
+  channel_name TEXT NOT NULL,
+  video_title TEXT NOT NULL,
+  video_url TEXT UNIQUE NOT NULL,
+  upload_date TIMESTAMP NOT NULL,
+  subtitles TEXT,
+  duration INTEGER,
+  view_count INTEGER,
+  thumbnail_url TEXT,
+  video_id TEXT UNIQUE NOT NULL,
+  channel_id TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### Channels Table
+```sql
+CREATE TABLE channels (
+  id TEXT PRIMARY KEY,
+  channel_id TEXT UNIQUE NOT NULL,
+  channel_name TEXT NOT NULL,
+  channel_url TEXT NOT NULL,
+  description TEXT,
+  subscriber_count INTEGER,
+  video_count INTEGER,
+  thumbnail_url TEXT,
+  last_processed TIMESTAMP,
+  is_processing BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+## Development Scripts 🔧
+
+```bash
+# Development
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+
+# Database
+npm run db:generate  # Generate Prisma client
+npm run db:push      # Push schema to database
+npm run db:migrate   # Run database migrations
+npm run db:studio    # Open Prisma Studio
+
+# Setup
+npm run setup        # Install deps + setup database
+```
+
+## Deployment 🚀
+
+### Vercel (Recommended)
+
+1. Push your code to GitHub
+2. Connect your repository to [Vercel](https://vercel.com)
+3. Add environment variables in Vercel dashboard
+4. Deploy automatically on push
+
+### Other Platforms
+
+The application can be deployed on any platform that supports Node.js:
+- Netlify
+- Railway
+- Render
+- DigitalOcean App Platform
+
+## Environment Variables Reference 📝
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
+| `YOUTUBE_API_KEY` | YouTube Data API v3 key | Yes |
+| `OPENAI_API_KEY` | OpenAI API key | Yes |
+| `NEXTAUTH_URL` | Application URL | Yes |
+| `NEXTAUTH_SECRET` | NextAuth secret key | Yes |
+| `NODE_ENV` | Environment (development/production) | No |
+
+## Troubleshooting 🔧
+
+### Common Issues
+
+1. **YouTube API Quota Exceeded**
+   - YouTube API has daily quotas
+   - Consider implementing rate limiting
+   - Use multiple API keys if needed
+
+2. **Subtitles Not Available**
+   - Not all videos have subtitles
+   - Auto-generated captions may not be available
+   - Check video privacy settings
+
+3. **Database Connection Issues**
+   - Verify DATABASE_URL format
+   - Ensure PostgreSQL is running
+   - Check firewall settings
+
+4. **OpenAI API Errors**
+   - Verify API key is valid
+   - Check billing/usage limits
+   - Monitor rate limits
+
+### Performance Optimization
+
+1. **Database Indexing**
+   ```sql
+   CREATE INDEX idx_videos_channel_name ON videos(channel_name);
+   CREATE INDEX idx_videos_subtitles ON videos USING gin(to_tsvector('english', subtitles));
+   ```
+
+2. **Caching**
+   - Implement Redis for API response caching
+   - Cache channel processing status
+   - Use CDN for static assets
+
+## Contributing 🤝
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## License 📄
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support 💬
+
+If you encounter any issues or have questions:
+
+1. Check the troubleshooting section
+2. Search existing GitHub issues
+3. Create a new issue with detailed information
+
+## Roadmap 🗺️
+
+- [ ] Video thumbnail processing
+- [ ] Advanced search filters
+- [ ] User authentication
+- [ ] Playlist support
+- [ ] Export functionality
+- [ ] Webhook notifications
+- [ ] Multi-language subtitle support
+- [ ] Video sentiment analysis
+
+---
+
+Built with ❤️ using Next.js, PostgreSQL, and OpenAI
